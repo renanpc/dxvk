@@ -179,6 +179,8 @@ namespace dxvk {
     Logger::info(str::format("DXVK: Graphics pipeline libraries ",
       (m_device->canUseGraphicsPipelineLibrary() ? "supported" : "not supported")));
 
+    m_compiler = new DxvkPipelineCompiler(device);
+
     if (m_device->canUseGraphicsPipelineLibrary()) {
       auto library = createNullFsPipelineLibrary();
       library->compilePipeline();

@@ -20,6 +20,8 @@ namespace dxvk {
     allowFse              = config.getOption<bool>    ("dxvk.allowFse",               false);
     deviceFilter          = config.getOption<std::string>("dxvk.deviceFilter",        "");
     tilerMode             = config.getOption<Tristate>("dxvk.tilerMode",              Tristate::Auto);
+    enableAsync = config.getOption<bool>("dxvk.enableAsync", false);
+    numAsyncThreads = config.getOption<int32_t>("dxvk.numAsyncThreads", 0);
   }
 
 }

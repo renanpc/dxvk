@@ -292,6 +292,37 @@ namespace dxvk {
     }
 
     /**
+     * \brief Sets render target usage frame number
+     *
+     * The image view will track internally when
+     * it was last used as a render target. This
+     * info is used for async shader compilation.
+     * \param [in] frameId Frame number
+     */
+    void setRtBindingFrameId(uint32_t frameId) {
+        if (frameId != m_rtBindingFrameId) {
+            if (frameId == m_rtBindingFrameId + 1)
+                m_rtBindingFrameCount += 1;
+            else
+                m_rtBindingFrameCount = 0;
+
+            m_rtBindingFrameId = frameId;
+        }
+    }
+
+    /**
+     * \brief Checks for async pipeline compatibility
+     *
+     * Asynchronous pipeline compilation may be enabled if the
+     * render target has been drawn to in the previous frames.
+     * \param [in] frameId Current frame ID
+     * \returns \c true if async compilation is supported
+     */
+    bool getRtBindingAsyncCompilationCompat() const {
+        return m_rtBindingFrameCount >= 5;
+    }
+
+    /**
      * \brief Queries the view layout
      *
      * If no layout was explicitly specified for the view, this
@@ -709,6 +740,9 @@ namespace dxvk {
     uint32_t                    m_version     = 0u;
     VkBool32                    m_shared      = VK_FALSE;
     VkBool32                    m_stableAddress = VK_FALSE;
+
+    uint32_t m_rtBindingFrameId = 0;
+    uint32_t m_rtBindingFrameCount = 0;
 
     DxvkResourceImageInfo       m_imageInfo   = { };
 

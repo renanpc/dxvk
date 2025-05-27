@@ -21,6 +21,13 @@ namespace dxvk {
     /// when using the state cache
     int32_t numCompilerThreads = 0;
 
+    // Enable async pipelines
+    bool enableAsync;
+
+    /// Number of compiler threads
+    /// when using async pipelines
+    int32_t numAsyncThreads;
+
     /// Enable graphics pipeline library
     Tristate enableGraphicsPipelineLibrary = Tristate::Auto;
 

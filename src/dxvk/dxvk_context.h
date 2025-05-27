@@ -1713,6 +1713,8 @@ namespace dxvk {
     DxvkFramebufferInfo makeFramebufferInfo(
       const DxvkRenderTargets&      renderTargets);
 
+    void updateFramebuffer(bool isDraw = false);
+
     void updateFramebuffer();
     
     void applyRenderTargetLoadLayouts();
@@ -1830,6 +1832,8 @@ namespace dxvk {
     bool tryInvalidateDeviceLocalBuffer(
       const Rc<DxvkBuffer>&           buffer,
             VkDeviceSize              copySize);
+
+    bool checkAsyncCompilationCompat();
 
     Rc<DxvkImageView> ensureImageViewCompatibility(
       const Rc<DxvkImageView>&        view,

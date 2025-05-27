@@ -1057,7 +1057,8 @@ namespace dxvk {
 
 
   DxvkGraphicsPipelineHandle DxvkGraphicsPipeline::getPipelineHandle(
-    const DxvkGraphicsPipelineStateInfo& state) {
+    const DxvkGraphicsPipelineStateInfo& state,
+    bool                           async) {
     DxvkGraphicsPipelineInstance* instance = this->findInstance(state);
 
     if (unlikely(!instance)) {
@@ -1073,11 +1074,18 @@ namespace dxvk {
         // Keep pipeline object locked, at worst we're going to stall
         // a state cache worker and the current thread needs priority.
         bool canCreateBasePipeline = this->canCreateBasePipeline(state);
-        instance = this->createInstance(state, canCreateBasePipeline);
+
+        if (async && m_pipeMgr->m_compiler != nullptr)
+            m_pipeMgr->m_compiler->queueCompilation(this, state);
+        else
+            instance = this->createInstance(state, canCreateBasePipeline);
 
         // Unlock here since we may dispatch the pipeline to a worker,
         // which will then acquire it to increment the use counter.
         lock.unlock();
+
+        if (!instance)
+            return VK_NULL_HANDLE;
 
         // If necessary, compile an optimized pipeline variant
         if (!instance->fastHandle.load())
@@ -1094,7 +1102,7 @@ namespace dxvk {
   }
 
 
-  void DxvkGraphicsPipeline::compilePipeline(
+  bool DxvkGraphicsPipeline::compilePipeline(
     const DxvkGraphicsPipelineStateInfo& state) {
     if (m_device->config().enableGraphicsPipelineLibrary == Tristate::True)
       return;
@@ -1105,7 +1113,7 @@ namespace dxvk {
     if (!instance) {
       // Exit early if the state vector is invalid
       if (!this->validatePipelineState(state, false))
-        return;
+        return false;
 
       // Do not compile if this pipeline can be fast linked. This essentially
       // disables the state cache for pipelines that do not benefit from it.
@@ -1131,7 +1139,9 @@ namespace dxvk {
 
     // Log pipeline state on error
     if (!pipeline)
-      this->logPipelineState(LogLevel::Error, state);
+        this->logPipelineState(LogLevel::Error, state);
+    else
+        return true;
   }
 
 
@@ -1177,6 +1187,8 @@ namespace dxvk {
   DxvkGraphicsPipelineInstance* DxvkGraphicsPipeline::createInstance(
     const DxvkGraphicsPipelineStateInfo& state,
           bool                           doCreateBasePipeline) {
+
+    std::lock_guard<dxvk::mutex> lock(m_mutex2);
     VkPipeline baseHandle = VK_NULL_HANDLE;
     VkPipeline fastHandle = VK_NULL_HANDLE;
 
@@ -1198,6 +1210,7 @@ namespace dxvk {
   
   DxvkGraphicsPipelineInstance* DxvkGraphicsPipeline::findInstance(
     const DxvkGraphicsPipelineStateInfo& state) {
+     std::lock_guard<dxvk::mutex> lock(m_mutex2);
     for (auto& instance : m_pipelines) {
       if (instance.state == state)
         return &instance;

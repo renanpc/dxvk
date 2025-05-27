@@ -7,6 +7,9 @@
 
 #include "../util/util_singleton.h"
 
+#include "openvr.h"
+#include "d3d9_vr.h"
+
 #include <algorithm>
 
 namespace dxvk {
@@ -264,20 +267,44 @@ namespace dxvk {
 
 
   HRESULT STDMETHODCALLTYPE D3D9InterfaceEx::CreateDevice(
-          UINT                   Adapter,
-          D3DDEVTYPE             DeviceType,
-          HWND                   hFocusWindow,
-          DWORD                  BehaviorFlags,
-          D3DPRESENT_PARAMETERS* pPresentationParameters,
-          IDirect3DDevice9**     ppReturnedDeviceInterface) {
-    return this->CreateDeviceEx(
-      Adapter,
-      DeviceType,
-      hFocusWindow,
-      BehaviorFlags,
-      pPresentationParameters,
-      nullptr, // <-- pFullscreenDisplayMode
-      reinterpret_cast<IDirect3DDevice9Ex**>(ppReturnedDeviceInterface));
+      UINT                   Adapter,
+      D3DDEVTYPE             DeviceType,
+      HWND                   hFocusWindow,
+      DWORD                  BehaviorFlags,
+      D3DPRESENT_PARAMETERS* pPresentationParameters,
+      IDirect3DDevice9** ppReturnedDeviceInterface) {
+
+      vr::HmdError error = vr::VRInitError_None;
+      vr::IVRSystem* system = vr::VR_Init(&error, vr::VRApplication_Scene);
+
+      if (error == vr::VRInitError_None)
+      {
+          // Override viewport size
+          uint32_t renderWidth, renderHeight;
+          system->GetRecommendedRenderTargetSize(&renderWidth, &renderHeight);
+          pPresentationParameters->BackBufferWidth = renderWidth;
+          pPresentationParameters->BackBufferHeight = renderHeight;
+      }
+      else
+      {
+          char errorString[256];
+          snprintf(errorString, 256, "VR_Init failed: %s", vr::VR_GetVRInitErrorAsEnglishDescription(error));
+          MessageBox(0, errorString, "DXVK", MB_ICONERROR | MB_OK);
+          ExitProcess(0);
+      }
+
+      auto result = this->CreateDeviceEx(
+          Adapter,
+          DeviceType,
+          hFocusWindow,
+          BehaviorFlags,
+          pPresentationParameters,
+          nullptr, // <-- pFullscreenDisplayMode
+          reinterpret_cast<IDirect3DDevice9Ex**>(ppReturnedDeviceInterface));
+
+      Direct3DCreateVRImpl(*ppReturnedDeviceInterface, &g_D3DVR9);
+
+      return result;
   }
 
 
