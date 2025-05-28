@@ -357,6 +357,8 @@ namespace dxvk {
     DxvkImageViewImageProperties m_properties = { };
 
     std::array<const DxvkDescriptor*, ViewCount> m_views = { };
+    uint32_t m_rtBindingFrameId = 0;
+    uint32_t m_rtBindingFrameCount = 0;
 
     const DxvkDescriptor* createView(VkImageViewType type) const;
 
@@ -740,9 +742,6 @@ namespace dxvk {
     uint32_t                    m_version     = 0u;
     VkBool32                    m_shared      = VK_FALSE;
     VkBool32                    m_stableAddress = VK_FALSE;
-
-    uint32_t m_rtBindingFrameId = 0;
-    uint32_t m_rtBindingFrameCount = 0;
 
     DxvkResourceImageInfo       m_imageInfo   = { };
 

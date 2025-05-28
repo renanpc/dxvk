@@ -557,6 +557,9 @@ namespace dxvk {
     DxvkGraphicsPipelineHandle getPipelineHandle(
       const DxvkGraphicsPipelineStateInfo&    state,
         bool                              async);
+
+    void writePipelineStateToCache(
+      const DxvkGraphicsPipelineStateInfo& state) const;
     
     /**
      * \brief Compiles a pipeline
@@ -611,6 +614,7 @@ namespace dxvk {
 
     DxvkShaderPipelineLibrary*  m_vsLibrary;
     DxvkShaderPipelineLibrary*  m_fsLibrary;
+  	DxvkPipelineManager*        m_pipeMgr;
 
     uint32_t m_vsIn  = 0;
     uint32_t m_fsOut = 0;
@@ -678,10 +682,7 @@ namespace dxvk {
       const DxvkGraphicsPipelineStateInfo& state,
             bool                           trusted) const;
 
-    DxvkPipelineLayoutBuilder buildPipelineLayout() const;
-
-    void writePipelineStateToCache(
-      const DxvkGraphicsPipelineStateInfo& state) const;
+    DxvkPipelineLayoutBuilder buildPipelineLayout() const;    
 
     void logPipelineState(
             LogLevel                       level,

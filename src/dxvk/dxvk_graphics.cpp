@@ -1002,7 +1002,8 @@ namespace dxvk {
     m_barrier       (m_layout.getGlobalBarrier()),
     m_vsLibrary     (vsLibrary),
     m_fsLibrary     (fsLibrary),
-    m_debugName     (createDebugName()) {
+    m_debugName     (createDebugName()),
+    m_pipeMgr       (pipeMgr) {
     m_vsIn  = m_shaders.vs != nullptr ? m_shaders.vs->info().inputMask  : 0;
     m_fsOut = m_shaders.fs != nullptr ? m_shaders.fs->info().outputMask : 0;
     m_specConstantMask = this->computeSpecConstantMask();
@@ -1085,7 +1086,7 @@ namespace dxvk {
         lock.unlock();
 
         if (!instance)
-            return VK_NULL_HANDLE;
+            return DxvkGraphicsPipelineHandle();
 
         // If necessary, compile an optimized pipeline variant
         if (!instance->fastHandle.load())
@@ -1105,7 +1106,7 @@ namespace dxvk {
   bool DxvkGraphicsPipeline::compilePipeline(
     const DxvkGraphicsPipelineStateInfo& state) {
     if (m_device->config().enableGraphicsPipelineLibrary == Tristate::True)
-      return;
+      return false;
 
     // Try to find an existing instance that contains a base pipeline
     DxvkGraphicsPipelineInstance* instance = this->findInstance(state);
@@ -1118,7 +1119,7 @@ namespace dxvk {
       // Do not compile if this pipeline can be fast linked. This essentially
       // disables the state cache for pipelines that do not benefit from it.
       if (this->canCreateBasePipeline(state))
-        return;
+        return false;
 
       // Prevent other threads from adding new instances and check again
       std::unique_lock<dxvk::mutex> lock(m_mutex);
@@ -1132,7 +1133,7 @@ namespace dxvk {
     // an optimized version of this pipeline
     if (instance->isCompiling.load()
      || instance->isCompiling.exchange(VK_TRUE, std::memory_order_acquire))
-      return;
+      return false;
 
     VkPipeline pipeline = this->getOptimizedPipeline(state);
     instance->fastHandle.store(pipeline, std::memory_order_release);
